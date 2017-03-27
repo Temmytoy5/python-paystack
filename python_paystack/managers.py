@@ -7,7 +7,8 @@ import jsonpickle
 import validators
 import math
 from .plans import Plan
-
+from lxml import etree
+import string
 
 class Manager():
     '''
@@ -450,8 +451,61 @@ class CustomersManager(Manager):
         else:
             raise APIConnectionFailedError(message)
 
+    def clean_customeritem_tag(self,itemtag):
+        '''
+        This method removes all foreign characters in the tag
+        An error will be raised if a foreign character is found
+        in the tag.
+        '''
+        
+        dirt = [x for x in itemtag if ((x not in string.ascii_letters) and (x not in string.digits))]
 
+        newtag = '_'+itemtag
 
+        for dirtitem in dirt:
+            newtag = '_'.join(newtag.split(dirtitem))
+
+        return newtag
+    
+    def customer_to_xml(self,id,encoding='utf-8'):
+        '''
+        Method for representing the customer in xml format
+        <customer>
+            <first_name>$FIRSTNAME</first_name>
+            <last_name>$LASTNAME</last_name>
+            ...
+        </customer>
+        '''
+        
+        customer = Customer.get_customer(id)
+        customer_root = etree.Element('Customer'+clean_customeritem_tag(str(id)))
+
+        customer_first = etree.Element('first_name')
+        customer_first.text = clean_customeritem_tag(customer.first_name)
+
+        customer_last = etree.Element('last_name')
+        customer_last.text = clean_customeritem_tag(customer.last_name)
+
+        customer_email = etree.Element('email')
+        customer_email.text = clean_customeritem_tag(customer.email)
+
+        customer_phone = etree.Element('phone')
+        customer_phone.text = clean_customeritem_tag(customer.phone)
+
+        customer_code = etree.Element('customer_code')
+        customer_code.text = clean_customeritem_tag(customer.customer_code)
+
+        customer_raction = etree.Element('risk_action')
+        customer_raction.text = clean_customeritem_tag(customer.risk_action)
+        
+        customer_root.append(customer_first)
+        customer_root.append(customer_last)
+        customer_root.append(customer_email)
+        customer_root.append(customer_phone)
+        customer_root.append(customer_code)
+        customer_root.append(customer_raction)
+
+        return bytes.decode(etree.tostring(customer_root,pretty_print=True),encoding)
 
 class PlanManager(Manager):
     '''   
